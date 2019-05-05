@@ -20,6 +20,7 @@ import com.google.ar.core.exceptions.UnavailableUserDeclinedInstallationExceptio
 import com.jtl.arrulerdemo.helper.DisplayRotationHelper;
 import com.jtl.arrulerdemo.helper.PermissionHelper;
 import com.jtl.arrulerdemo.helper.SnackbarHelper;
+import com.jtl.arrulerdemo.render.BackgroundRender;
 import com.jtl.arrulerdemo.render.BackgroundRenderer;
 
 import javax.microedition.khronos.egl.EGLConfig;
@@ -34,7 +35,7 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     private SnackbarHelper mSnackbarHelper;
     private DisplayRotationHelper mDisplayRotationHelper;
     //Render
-    private BackgroundRenderer mBackgroundRenderer;
+    private BackgroundRender mBackgroundRender;
     //UI
     private GLSurfaceView mShowGLSurface;
 
@@ -119,7 +120,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             return;
         }
 
-        mShowGLSurface.onResume();
+
+        mShowGLSurface.onResume();//GLSurfaceView onResume
         mDisplayRotationHelper.onResume();
     }
 
@@ -127,6 +129,9 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
     protected void onPause() {
         super.onPause();
         if (mSession!=null){
+            //由于GLSurfaceView需要Session的数据。所以如果Session先pause会导致无法获取Session中的数据
+            mShowGLSurface.onPause();//GLSurfaceView onPause
+            mDisplayRotationHelper.onPause();
             mSession.pause();
         }
     }
@@ -166,8 +171,8 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
         //设置每一帧清屏颜色 传入参输为RGBA
         GLES20.glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-        mBackgroundRenderer=new BackgroundRenderer();
-        mBackgroundRenderer.createOnGlThread(this);
+        mBackgroundRender=new BackgroundRender();
+        mBackgroundRender.createOnGlThread(this);
     }
 
     /**
@@ -196,12 +201,12 @@ public class MainActivity extends AppCompatActivity implements GLSurfaceView.Ren
             return;
         }
         //设置纹理ID
-        mSession.setCameraTextureName(mBackgroundRenderer.getTextureId());
+        mSession.setCameraTextureName(mBackgroundRender.getTextureId());
         //根据设备渲染Rotation，width，height。session.setDisplayGeometry(displayRotation, viewportWidth, viewportHeight);
         mDisplayRotationHelper.updateSessionIfNeeded(mSession);
         try {
             Frame frame=mSession.update();//获取Frame数据
-            mBackgroundRenderer.draw(frame);//渲染frame数据
+            mBackgroundRender.draw(frame);//渲染frame数据
         } catch (CameraNotAvailableException e) {
             e.printStackTrace();
         }
